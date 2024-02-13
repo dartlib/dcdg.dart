@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:dcdg/src/class_element_collector.dart';
 import 'package:path/path.dart' as path;
 
@@ -31,25 +30,26 @@ Future<Iterable<ClassElement>> findClassElements({
       makePackageSubPath('bin'),
       makePackageSubPath('web'),
     ],
+    resourceProvider: PhysicalResourceProvider.INSTANCE,
   );
-
-  final dartFiles = Directory(makePackageSubPath(searchPath))
-      .listSync(recursive: true)
-      .where((file) => path.extension(file.path) == '.dart')
-      .where((file) => !exportedOnly || !file.path.contains('lib/src/'));
 
   final collector = ClassElementCollector(
     exportedOnly: exportedOnly,
   );
-  for (final file in dartFiles) {
-    final filePath = path.normalize(path.absolute(file.path));
-    final context = contextCollection.contextFor(filePath);
+  for (final context in contextCollection.contexts) {
+    for (final filePath in context.contextRoot.analyzedFiles()) {
+      if (!filePath.endsWith('.dart') ||
+          (exportedOnly && filePath.contains('lib/src/'))) {
+        continue;
+      }
 
-    final unitResult = await context.currentSession.getResolvedUnit(filePath);
-    if (unitResult is ResolvedUnitResult) {
-      // Skip parts files to avoid duplication.
-      if (!unitResult.isPart) {
-        unitResult.libraryElement.accept(collector);
+      final unitResult = await context.currentSession.getResolvedUnit(filePath);
+
+      if (unitResult is ResolvedUnitResult) {
+        // Skip parts files to avoid duplication.
+        if (!unitResult.isPart) {
+          unitResult.libraryElement.accept(collector);
+        }
       }
     }
   }
