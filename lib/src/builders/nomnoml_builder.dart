@@ -35,7 +35,7 @@ class NomnomlBuilder implements DiagramBuilder {
 
   @override
   void addInterface(InterfaceType element) {
-    final interfaceName = fullClassName(element.element);
+    final interfaceName = fullClassName(element.element as ClassElement);
     _relationships.add('[$interfaceName]<:--[$_currentClass]');
   }
 
@@ -46,13 +46,13 @@ class NomnomlBuilder implements DiagramBuilder {
 
   @override
   void addMixin(InterfaceType element) {
-    final mixinName = fullClassName(element.element);
+    final mixinName = fullClassName(element.element as ClassElement);
     _relationships.add('[$mixinName]<:-[$_currentClass]');
   }
 
   @override
   void addSuper(InterfaceType element) {
-    final superName = fullClassName(element.element);
+    final superName = fullClassName(element.element as ClassElement);
     _relationships.add('[$superName]<:-[$_currentClass]');
   }
 
